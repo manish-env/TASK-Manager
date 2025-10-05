@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Freelance Task Board</title>
+    <style>
+        /* Modern Design System & Variables */
+        :root {
+            --background-primary: #f9fafb;
+            --background-secondary: #f3f4f6;
+            --surface-primary: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-primary: #e5e7eb;
+            --brand-primary: #4f46e5;
+            --brand-secondary: #6366f1;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --border-radius-md: 0.5rem; /* 8px */
+            --border-radius-lg: 0.75rem; /* 12px */
+            
+            --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+
+        /* Base & Layout */
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--background-primary);
+            color: var(--text-primary);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .btn-primary {
+            background-color: var(--brand-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--brand-secondary);
+        }
+
+        /* Kanban Board */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .kanban-column {
+            background-color: var(--background-secondary);
+            border-radius: var(--border-radius-lg);
+            padding: 1rem;
+        }
+        
+        .column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding: 0 0.25rem;
+        }
+
+        .kanban-column h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .task-count {
+            background-color: #d1d5db;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .tasks {
+            min-height: 200px;
+            padding: 0 0.25rem;
+        }
+
+        /* Task Card */
+        .task-card {
+            background-color: var(--surface-primary);
+            border-radius: var(--border-radius-md);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-primary);
+            cursor: pointer; /* Changed from grab to pointer for edit */
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        
+        .task-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .task-card.dragging {
+            opacity: 0.5;
+            transform: rotate(3deg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .task-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .task-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .task-card p {
+            margin: 0 0 1rem 0;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .task-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .meta-item svg {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .delete-btn {
+            background: none; border: none; color: #9ca3af;
+            cursor: pointer; font-size: 1.25rem; line-height: 1;
+            padding: 0.25rem; border-radius: 999px;
+            transition: color 0.2s, background-color 0.2s;
+        }
+        
+        .delete-btn:hover {
+            color: #ef4444;
+            background-color: #fee2e2;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.5);
+            justify-content: center; align-items: center;
+        }
+        
+        .modal-content {
+            background-color: var(--surface-primary);
+            margin: auto; padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            width: 90%; max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            position: relative;
+        }
+        
+        .close-btn {
+            position: absolute; top: 1rem; right: 1rem;
+            background: none; border: none; font-size: 1.5rem;
+            color: #9ca3af; cursor: pointer;
+        }
+        
+        .modal-content h2 {
+            margin-top: 0;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: 500; font-size: 0.875rem; margin-bottom: 0.5rem; }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 0.75rem;
+            border: 1px solid var(--border-primary);
+            border-radius: var(--border-radius-md);
+            font-family: var(--font-family-sans); box-sizing: border-box;
+            background-color: #f9fafb;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: 2px solid var(--brand-primary);
+            border-color: transparent;
+        }
+        .form-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        #current-file { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem; }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <h1>Task Board</h1>
+            <button id="add-task-btn" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+                Add New Task
+            </button>
+        </header>
+
+        <div class="kanban-board">
+            <div class="kanban-column" id="todo" ondragover="event.preventDefault()" ondrop="drop(event)">
+                <div class="column-header">
+                    <h2>To Do</h2>
+                    <span id="todo-count" class="task-count">0</span>
+                </div>
+                <div class="tasks" id="todo-tasks"></div>
+            </div>
+            <div class="kanban-column" id="inprogress" ondragover="event.preventDefault()" ondrop="drop(event)">
+                <div class="column-header">
+                    <h2>In Progress</h2>
+                    <span id="inprogress-count" class="task-count">0</span>
+                </div>
+                <div class="tasks" id="inprogress-tasks"></div>
+            </div>
+            <div class="kanban-column" id="pending" ondragover="event.preventDefault()" ondrop="drop(event)">
+                <div class="column-header">
+                    <h2>Pending</h2>
+                    <span id="pending-count" class="task-count">0</span>
+                </div>
+                <div class="tasks" id="pending-tasks"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal-btn">&times;</span>
+            <h2 id="modal-title">Create a New Task</h2>
+            <div id="task-form">
+                <div class="form-group">
+                    <label for="task-title">Title</label>
+                    <input type="text" id="task-title" placeholder="e.g., Design new logo">
+                </div>
+                <div class="form-group">
+                    <label for="task-desc">Description</label>
+                    <textarea id="task-desc" rows="3" placeholder="Add more details..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="task-file">File Attachment</label>
+                    <input type="file" id="task-file">
+                    <div id="current-file"></div>
+                </div>
+                <div class="form-dates">
+                    <div class="form-group">
+                        <label for="start-date">Start Date</label>
+                        <input type="date" id="start-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="due-date">Due Date</label>
+                        <input type="date" id="due-date">
+                    </div>
+                </div>
+                <button id="submit-task-btn" class="btn-primary" style="width: 100%; justify-content: center;">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const taskModal = document.getElementById('task-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const submitTaskBtn = document.getElementById('submit-task-btn');
+            const modalTitle = document.getElementById('modal-title');
+            const titleInput = document.getElementById('task-title');
+            const descInput = document.getElementById('task-desc');
+            const fileInput = document.getElementById('task-file');
+            const currentFileInput = document.getElementById('current-file');
+            const startDateInput = document.getElementById('start-date');
+            const dueDateInput = document.getElementById('due-date');
+
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            let editingTaskId = null;
+            let draggedTaskId = null;
+
+            const dateIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-4.5 12h22.5" /></svg>`;
+            const fileIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3.375 3.375 0 1116.5 7.372L5.552 18.35m5.997-5.997l-5.131 5.131" /></svg>`;
+
+            const saveTasks = () => {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            };
+
+            const renderTasks = () => {
+                const columns = { todo: 0, inprogress: 0, pending: 0 };
+                ['todo', 'inprogress', 'pending'].forEach(id => document.getElementById(`${id}-tasks`).innerHTML = '');
+
+                tasks.forEach(task => {
+                    columns[task.status]++;
+                    const taskCard = document.createElement('div');
+                    taskCard.className = 'task-card';
+                    taskCard.setAttribute('draggable', 'true');
+                    taskCard.dataset.id = task.id;
+
+                    const fileHTML = task.fileName ? `<div class="meta-item">${fileIcon} ${task.fileName}</div>` : '';
+                    const datesHTML = (task.startDate || task.dueDate) ? `<div class="meta-item">${dateIcon} ${task.startDate || '...'} → ${task.dueDate || '...'}</div>` : '';
+                    
+                    taskCard.innerHTML = `
+                        <div class="task-card-header">
+                            <h3>${task.title}</h3>
+                            <button class="delete-btn" data-id="${task.id}">&times;</button>
+                        </div>
+                        <p>${task.description || ''}</p>
+                        <div class="task-meta">${fileHTML}${datesHTML}</div>
+                    `;
+                    
+                    taskCard.addEventListener('dragstart', dragStart);
+                    taskCard.addEventListener('dragend', dragEnd);
+                    taskCard.querySelector('.delete-btn').addEventListener('click', deleteTask);
+                    taskCard.addEventListener('click', (e) => {
+                        if (e.target.closest('.delete-btn')) return;
+                        openModal(task);
+                    });
+                    
+                    document.getElementById(`${task.status}-tasks`).appendChild(taskCard);
+                });
+                
+                ['todo', 'inprogress', 'pending'].forEach(id => document.getElementById(`${id}-count`).textContent = columns[id]);
+            };
+
+            const handleFormSubmit = () => {
+                if (titleInput.value.trim() === '') return alert('Please enter a task title.');
+                
+                const taskData = {
+                    title: titleInput.value.trim(),
+                    description: descInput.value.trim(),
+                    startDate: startDateInput.value,
+                    dueDate: dueDateInput.value,
+                };
+                
+                if (editingTaskId) {
+                    const task = tasks.find(t => t.id === editingTaskId);
+                    Object.assign(task, taskData);
+                    if (fileInput.files[0]) task.fileName = fileInput.files[0].name;
+                } else {
+                    tasks.push({
+                        ...taskData,
+                        id: 'task-' + Date.now(),
+                        status: 'todo',
+                        fileName: fileInput.files[0] ? fileInput.files[0].name : '',
+                    });
+                }
+                saveTasks();
+                renderTasks();
+                closeModal();
+            };
+            
+            const deleteTask = (e) => {
+                e.stopPropagation();
+                const taskId = e.target.closest('.delete-btn').dataset.id;
+                tasks = tasks.filter(task => task.id !== taskId);
+                saveTasks();
+                renderTasks();
+            };
+
+            // Modal Functions
+            const openModal = (task = null) => {
+                if (task) {
+                    editingTaskId = task.id;
+                    modalTitle.textContent = 'Edit Task';
+                    submitTaskBtn.textContent = 'Save Changes';
+                    titleInput.value = task.title;
+                    descInput.value = task.description;
+                    startDateInput.value = task.startDate;
+                    dueDateInput.value = task.dueDate;
+                    currentFileInput.textContent = task.fileName ? `Current: ${task.fileName}` : '';
+                } else {
+                    editingTaskId = null;
+                    modalTitle.textContent = 'Create a New Task';
+                    submitTaskBtn.textContent = 'Add Task';
+                    titleInput.value = ''; descInput.value = ''; startDateInput.value = '';
+                    dueDateInput.value = ''; currentFileInput.textContent = '';
+                }
+                fileInput.value = ''; // Always reset file input
+                taskModal.style.display = 'flex';
+            };
+            const closeModal = () => { taskModal.style.display = 'none'; };
+
+            // Drag and Drop Functions
+            const dragStart = (e) => {
+                if (e.target.classList.contains('task-card')) {
+                    draggedTaskId = e.target.dataset.id;
+                    setTimeout(() => e.target.classList.add('dragging'), 0);
+                }
+            };
+            const dragEnd = (e) => {
+                if (draggedTaskId) {
+                    const el = document.querySelector(`[data-id="${draggedTaskId}"]`);
+                    if (el) el.classList.remove('dragging');
+                    draggedTaskId = null;
+                }
+            };
+            window.drop = (e) => {
+                e.preventDefault();
+                const column = e.target.closest('.kanban-column');
+                if (column && draggedTaskId) {
+                    const task = tasks.find(t => t.id === draggedTaskId);
+                    if (task && task.status !== column.id) {
+                        task.status = column.id;
+                        saveTasks();
+                        renderTasks();
+                    }
+                }
+            };
+            
+            // Event Listeners
+            addTaskBtn.addEventListener('click', () => openModal());
+            closeModalBtn.addEventListener('click', closeModal);
+            window.addEventListener('click', (e) => { if (e.target === taskModal) closeModal(); });
+            submitTaskBtn.addEventListener('click', handleFormSubmit);
+            
+            renderTasks();
+        });
+    </script>
+</body>
+</html>
